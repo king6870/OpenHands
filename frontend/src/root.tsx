@@ -32,7 +32,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export const meta: MetaFunction = () => [
   { title: "OpenHands" },
-  { name: "description", content: "Let's Start Building with Azure!" },
+  { name: "description", content: "Let's Start Building with Azure Models!" },
 ];
 
 export default function App() {
