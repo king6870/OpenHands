@@ -183,6 +183,28 @@ class LLMConfig(BaseModel):
         if self.model.startswith('azure') and self.api_version is None:
             self.api_version = '2024-12-01-preview'
 
+        # If Azure model, and base_url/api_key/api_version not provided, try env vars
+        if self.model.startswith('azure'):
+            # Prefer explicit config, fall back to environment variables used by sample scripts
+            if not self.base_url:
+                env_endpoint = os.getenv('AZURE_OPENAI_ENDPOINT') or os.getenv('AZURE_OPENAI_BASE_URL')
+                if env_endpoint:
+                    self.base_url = env_endpoint
+            if not self.api_key:
+                env_key = os.getenv('AZURE_OPENAI_KEY')
+                if env_key:
+                    try:
+                        # SecretStr is imported at module top; wrap only when available
+                        from pydantic import SecretStr
+
+                        self.api_key = SecretStr(env_key)
+                    except Exception:
+                        # Fall back to plain string if pydantic isn't available for some reason
+                        self.api_key = env_key  # type: ignore
+            # Allow overriding api_version via AZURE_OPENAI_API_VERSION
+            if os.getenv('AZURE_OPENAI_API_VERSION') and self.api_version is None:
+                self.api_version = os.getenv('AZURE_OPENAI_API_VERSION')
+
         # Set AWS credentials as environment variables for LiteLLM Bedrock
         if self.aws_access_key_id:
             os.environ['AWS_ACCESS_KEY_ID'] = self.aws_access_key_id.get_secret_value()
